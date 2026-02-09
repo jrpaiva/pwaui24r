@@ -4,355 +4,106 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     
-    <!-- Meta Tags PWA -->
+    <!-- PWA Essentials -->
     <meta name="mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-capable" content="yes">
-    <meta name="apple-mobile-web-app-status-bar-style" content="black">
     <meta name="theme-color" content="#000000">
     
-    <!-- Manifest -->
+    <!-- Service Worker OFFLINE -->
     <link rel="manifest" href="manifest.json">
-    <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🎛️</text></svg>">
     
-    <title>Mesa Ui24R - 192.168.1.3</title>
+    <title>Mesa Ui24R Offline</title>
     
     <style>
-        /* RESET TOTAL - ZERO INTERFERÊNCIA */
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-            -webkit-tap-highlight-color: transparent;
-            -webkit-user-select: none;
-            user-select: none;
-            touch-action: manipulation;
-        }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body, html { width: 100%; height: 100%; overflow: hidden; background: #000; }
+        iframe { position: absolute; top: 0; left: 0; width: 100%; height: 100%; border: none; }
         
-        body, html {
-            width: 100vw;
-            height: 100vh;
-            overflow: hidden;
-            background: #000;
-            position: fixed;
-        }
-        
-        /* IFRAME - TELA CHEIA ABSOLUTA */
-        iframe {
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            border: none;
-            z-index: 2;
-        }
-        
-        /* LOADING ULTRA SIMPLES */
-        .loader {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: #000;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            z-index: 3;
-            transition: opacity 0.4s;
-        }
-        
-        .spinner {
-            width: 40px;
-            height: 40px;
-            border: 3px solid rgba(255,255,255,0.1);
-            border-radius: 50%;
-            border-top-color: #2ecc71;
-            animation: spin 1s linear infinite;
-            margin-bottom: 15px;
-        }
-        
-        @keyframes spin {
-            to { transform: rotate(360deg); }
-        }
-        
-        /* MENSAGEM DE ERRO (só aparece se falhar) */
-        .error-screen {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: #000;
-            color: #fff;
-            display: none;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            text-align: center;
-            padding: 20px;
-            z-index: 4;
-        }
-        
-        .error-icon {
-            font-size: 48px;
-            margin-bottom: 20px;
-            color: #e74c3c;
-        }
-        
-        .retry-btn {
-            background: #2ecc71;
-            color: white;
-            border: none;
-            padding: 12px 30px;
-            border-radius: 25px;
-            font-size: 16px;
-            font-weight: bold;
-            margin-top: 20px;
-            cursor: pointer;
-        }
-        
-        /* NOTIFICAÇÃO DE CONEXÃO (pequena e some rápido) */
-        .connection-notice {
+        .status {
             position: fixed;
             top: 10px;
-            left: 50%;
-            transform: translateX(-50%);
-            background: rgba(46, 204, 113, 0.9);
-            color: white;
-            padding: 8px 16px;
-            border-radius: 20px;
+            left: 10px;
+            background: rgba(0,0,0,0.7);
+            color: #4CAF50;
+            padding: 5px 10px;
+            border-radius: 3px;
             font-size: 12px;
-            z-index: 5;
+            z-index: 1000;
             display: none;
-            animation: fadeInOut 3s ease;
-        }
-        
-        @keyframes fadeInOut {
-            0%, 100% { opacity: 0; transform: translateX(-50%) translateY(-10px); }
-            10%, 90% { opacity: 1; transform: translateX(-50%) translateY(0); }
         }
     </style>
 </head>
 <body>
-    <!-- Tela de Loading -->
-    <div class="loader" id="loader">
-        <div class="spinner"></div>
-        <div style="color: #aaa; font-size: 14px; margin-top: 10px;">
-            Conectando à mesa...
-        </div>
-    </div>
+    <!-- Status da conexão -->
+    <div class="status" id="status">Conectado</div>
     
-    <!-- Tela de Erro (só aparece se necessário) -->
-    <div class="error-screen" id="errorScreen">
-        <div class="error-icon">⚠️</div>
-        <div style="font-size: 20px; margin-bottom: 10px;">Conexão Falhou</div>
-        <div style="color: #aaa; font-size: 14px; max-width: 300px; line-height: 1.5;">
-            Não foi possível conectar à mesa Ui24R<br>
-            IP: <strong>192.168.1.3</strong>
-        </div>
-        <button class="retry-btn" id="retryBtn">Tentar Novamente</button>
-        <div style="margin-top: 25px; font-size: 12px; color: #666;">
-            Verifique:<br>
-            1. Mesa está ligada<br>
-            2. Mesma rede Wi-Fi<br>
-            3. IP correto
-        </div>
-    </div>
-    
-    <!-- Notificação de Conexão -->
-    <div class="connection-notice" id="connectionNotice">
-        ✅ Conectado à mesa
-    </div>
-    
-    <!-- IFRAME PRINCIPAL - IP FIXO DA SUA MESA -->
+    <!-- IP LOCAL DA MESA -->
     <iframe 
-        src="http://192.168.1.3" 
+        src="http://192.168.1.249" 
         id="mesaFrame"
         allow="autoplay; microphone; fullscreen"
-        title="Mesa Ui24R - 192.168.1.3"
     ></iframe>
     
     <script>
-        // ========== CONFIGURAÇÃO ==========
-        const MESA_IP = "192.168.1.3"; // IP FIXO DA SUA MESA
+        // ========== CONFIG ==========
+        const MESA_IP = "192.168.1.249";
         const MESA_URL = `http://${MESA_IP}`;
         
-        // ========== ELEMENTOS DOM ==========
-        const loader = document.getElementById('loader');
-        const mesaFrame = document.getElementById('mesaFrame');
-        const errorScreen = document.getElementById('errorScreen');
-        const retryBtn = document.getElementById('retryBtn');
-        const connectionNotice = document.getElementById('connectionNotice');
-        
-        // ========== ESTADO DA APLICAÇÃO ==========
-        let connectionAttempts = 0;
-        const MAX_ATTEMPTS = 3;
-        let isConnected = false;
-        
-        // ========== INICIALIZAÇÃO ==========
-        document.addEventListener('DOMContentLoaded', () => {
-            console.log(`🔧 PWA Ui24R - Conectando ao IP: ${MESA_IP}`);
+        // ========== DETECTAR ONLINE/OFFLINE ==========
+        function updateOnlineStatus() {
+            const status = document.getElementById('status');
             
-            // Configurar iframe com o IP fixo
-            mesaFrame.src = MESA_URL;
-            
-            // Entrar em fullscreen automático em dispositivos móveis
-            if (isMobileDevice()) {
-                setTimeout(enterFullscreen, 800);
-            }
-        });
-        
-        // ========== MONITORAMENTO DO IFRAME ==========
-        mesaFrame.addEventListener('load', () => {
-            console.log('✅ Interface da mesa carregada');
-            isConnected = true;
-            connectionAttempts = 0;
-            
-            // Mostrar notificação rápida
-            showConnectionNotice();
-            
-            // Esconder loader
-            setTimeout(() => {
-                loader.style.opacity = '0';
-                setTimeout(() => {
-                    loader.style.display = 'none';
-                }, 400);
-            }, 600);
-        });
-        
-        mesaFrame.addEventListener('error', () => {
-            console.error('❌ Falha ao carregar a mesa');
-            connectionAttempts++;
-            
-            if (connectionAttempts < MAX_ATTEMPTS) {
-                // Tentar reconexão automática
-                setTimeout(() => {
-                    mesaFrame.src = MESA_URL;
-                }, 2000);
+            if (navigator.onLine) {
+                status.textContent = "✅ Online";
+                status.style.color = "#4CAF50";
             } else {
-                // Mostrar tela de erro
-                loader.style.display = 'none';
-                errorScreen.style.display = 'flex';
+                status.textContent = "📡 Rede Local";
+                status.style.color = "#FF9800";
             }
-        });
-        
-        // ========== BOTÕES E CONTROLES ==========
-        retryBtn.addEventListener('click', () => {
-            errorScreen.style.display = 'none';
-            loader.style.display = 'flex';
-            loader.style.opacity = '1';
-            connectionAttempts = 0;
-            mesaFrame.src = MESA_URL;
-        });
-        
-        // ========== FUNÇÕES AUXILIARES ==========
-        function showConnectionNotice() {
-            connectionNotice.style.display = 'block';
+            
+            // Mostra por 3 segundos
+            status.style.display = 'block';
             setTimeout(() => {
-                connectionNotice.style.display = 'none';
+                status.style.display = 'none';
             }, 3000);
         }
         
-        function enterFullscreen() {
-            const elem = document.documentElement;
+        // Event listeners
+        window.addEventListener('online', updateOnlineStatus);
+        window.addEventListener('offline', updateOnlineStatus);
+        
+        // ========== CARREGAMENTO INTELIGENTE ==========
+        document.addEventListener('DOMContentLoaded', () => {
+            updateOnlineStatus();
             
-            if (elem.requestFullscreen && !document.fullscreenElement) {
-                elem.requestFullscreen().catch(e => {
-                    console.log('Fullscreen não suportado:', e);
-                });
-            } else if (elem.webkitRequestFullscreen) {
-                elem.webkitRequestFullscreen();
-            }
+            // Fullscreen automático
+            setTimeout(() => {
+                if (document.documentElement.requestFullscreen) {
+                    document.documentElement.requestFullscreen();
+                }
+            }, 1000);
+            
+            // Monitorar iframe
+            const iframe = document.getElementById('mesaFrame');
+            
+            iframe.onload = () => {
+                console.log("✅ Mesa carregada");
+            };
+            
+            iframe.onerror = () => {
+                // Tenta reconectar
+                setTimeout(() => {
+                    iframe.src = iframe.src;
+                }, 3000);
+            };
+        });
+        
+        // ========== SERVICE WORKER (CACHE OFFLINE) ==========
+        if ('serviceWorker' in navigator) {
+            navigator.serviceWorker.register('sw.js')
+                .then(() => console.log('✅ Service Worker registrado'))
+                .catch(err => console.log('❌ SW erro:', err));
         }
-        
-        function isMobileDevice() {
-            return /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
-        }
-        
-        // ========== CONTROLES POR GESTO (OPCIONAIS) ==========
-        
-        // Toque duplo para recarregar (útil se a interface travar)
-        let lastTap = 0;
-        document.addEventListener('touchend', (e) => {
-            if (e.touches && e.touches.length > 1) return; // Ignorar multi-toque
-            
-            const currentTime = new Date().getTime();
-            const tapLength = currentTime - lastTap;
-            
-            if (tapLength < 300 && tapLength > 0) {
-                // Toque duplo detectado - recarregar
-                mesaFrame.contentWindow.location.reload();
-                loader.style.display = 'flex';
-                loader.style.opacity = '1';
-                e.preventDefault();
-            }
-            
-            lastTap = currentTime;
-        });
-        
-        // Toque longo (1 segundo) para mostrar info
-        let touchTimer;
-        document.addEventListener('touchstart', (e) => {
-            if (e.touches.length === 1) {
-                touchTimer = setTimeout(() => {
-                    alert(`Mesa Ui24R\nIP: ${MESA_IP}\nStatus: ${isConnected ? 'Conectado' : 'Desconectado'}`);
-                }, 1000);
-            }
-        });
-        
-        document.addEventListener('touchend', () => {
-            clearTimeout(touchTimer);
-        });
-        
-        // ========== DETECTAR SAÍDA DO FULLSCREEN ==========
-        document.addEventListener('fullscreenchange', () => {
-            if (!document.fullscreenElement && isMobileDevice()) {
-                // Se sair do fullscreen no mobile, tentar voltar após 2s
-                setTimeout(enterFullscreen, 2000);
-            }
-        });
-        
-        // ========== PREVENIR COMPORTAMENTOS INDESEJADOS ==========
-        
-        // Prevenir zoom
-        document.addEventListener('gesturestart', (e) => e.preventDefault());
-        document.addEventListener('gesturechange', (e) => e.preventDefault());
-        document.addEventListener('gestureend', (e) => e.preventDefault());
-        
-        // Prevenir menu de contexto
-        document.addEventListener('contextmenu', (e) => e.preventDefault());
-        
-        // ========== MONITORAR CONEXÃO DE REDE ==========
-        window.addEventListener('online', () => {
-            if (!isConnected) {
-                console.log('🌐 Rede restabelecida - reconectando...');
-                mesaFrame.src = MESA_URL;
-            }
-        });
-        
-        window.addEventListener('offline', () => {
-            console.log('🌐 Sem conexão de rede');
-            if (isConnected) {
-                isConnected = false;
-            }
-        });
-        
-        // ========== AUTO-RECONEXÃO PERIÓDICA ==========
-        // Verifica a cada 30 segundos se ainda está conectado
-        setInterval(() => {
-            if (isConnected && navigator.onLine) {
-                // Tenta acessar um recurso para verificar se a mesa ainda responde
-                fetch(MESA_URL, { mode: 'no-cors', cache: 'no-store' })
-                    .catch(() => {
-                        console.log('🔄 Mesa não responde - tentando reconectar...');
-                        isConnected = false;
-                        mesaFrame.src = MESA_URL;
-                    });
-            }
-        }, 30000);
     </script>
 </body>
 </html>
-
