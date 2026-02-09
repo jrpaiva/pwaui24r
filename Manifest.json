@@ -1,0 +1,6 @@
+{
+  "display": "fullscreen",  // Esconde TUDO (Android)
+  "display": "standalone",   // Modo app, mantém barra de status (iOS)
+  "scope": "/",             // Define o escopo do PWA
+  "prefer_related_applications": false
+}

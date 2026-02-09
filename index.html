@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    
+    <!-- Meta tags para iOS -->
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    
+    <link rel="manifest" href="manifest.json">
+    <title>Mesa de Som Imersiva</title>
+    
+    <style>
+        body, html { 
+            margin: 0; 
+            padding: 0; 
+            height: 100%; 
+            overflow: hidden; 
+            background: #000; 
+            -webkit-touch-callout: none;
+            -webkit-user-select: none;
+            user-select: none;
+        }
+        
+        iframe { 
+            border: none; 
+            width: 100%; 
+            height: 100%; 
+            position: absolute;
+            top: 0;
+            left: 0;
+        }
+        
+        /* Tela de loading */
+        .loading {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: #000;
+            color: #fff;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+        }
+        
+        /* Botão para sair do modo imersivo (opcional) */
+        .exit-fullscreen {
+            position: fixed;
+            top: 10px;
+            right: 10px;
+            z-index: 1001;
+            background: rgba(0,0,0,0.5);
+            color: white;
+            border: none;
+            padding: 5px 10px;
+            border-radius: 5px;
+            display: none;
+        }
+    </style>
+</head>
+<body>
+    <div class="loading" id="loading">
+        Carregando interface da mesa...
+    </div>
+    
+    <button class="exit-fullscreen" id="exitBtn" onclick="exitFullscreen()">
+        Sair
+    </button>
+    
+    <!-- Substitua pelo IP da sua mesa -->
+    <iframe 
+        src="https://www.soundcraft.com/ui24-software-demo/mixer.html" 
+        id="mesaFrame"
+        allow="autoplay; microphone"
+        onload="hideLoading()">
+    </iframe>
+    
+    <script>
+        // Esconder loading quando o iframe carregar
+        function hideLoading() {
+            document.getElementById('loading').style.display = 'none';
+        }
+        
+        // Entrar em tela cheia (para desktop)
+        function requestFullscreen() {
+            const elem = document.documentElement;
+            if (elem.requestFullscreen) {
+                elem.requestFullscreen();
+            }
+        }
+        
+        // Tentar entrar em fullscreen ao tocar na tela (para alguns dispositivos)
+        document.addEventListener('click', requestFullscreen);
+        
+        // Detectar se está em iOS
+        const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
+        
+        if (isIOS) {
+            // iOS não suporta fullscreen verdadeiro
+            document.getElementById('exitBtn').style.display = 'block';
+        }
+        
+        // Recarregar o iframe se houver problema de conexão
+        let connectionAttempts = 0;
+        const maxAttempts = 3;
+        
+        document.getElementById('mesaFrame').onerror = function() {
+            if (connectionAttempts < maxAttempts) {
+                connectionAttempts++;
+                setTimeout(() => {
+                    this.src = this.src; // Recarregar
+                }, 2000);
+            }
+        };
+    </script>
+</body>
+</html>
