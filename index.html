@@ -4,29 +4,25 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     
-    <!-- CORRIGIDO: Meta tags unificadas -->
+    <!-- PWA Meta Tags -->
     <meta name="mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <meta name="apple-mobile-web-app-title" content="Mesa Imersiva">
-    
-    <!-- PWA Requirements -->
-    <link rel="manifest" href="/manifest.json">
-    <link rel="icon" href="/icon-192.png">
-    
-    <!-- CORRIGIDO: Theme color para PWA -->
     <meta name="theme-color" content="#000000">
-    <meta name="msapplication-TileColor" content="#000000">
-    <meta name="msapplication-navbutton-color" content="#000000">
     
-    <title>Mesa de Som Imersiva</title>
+    <!-- Manifest e Ícone -->
+    <link rel="manifest" href="manifest.json">
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🎛️</text></svg>">
+    
+    <title>Demo Ui24R - Maranata</title>
     
     <style>
+        /* Reset básico */
         * {
             margin: 0;
             padding: 0;
+            box-sizing: border-box;
             -webkit-tap-highlight-color: transparent;
-            -webkit-text-size-adjust: 100%;
         }
         
         body, html {
@@ -34,10 +30,17 @@
             height: 100%;
             overflow: hidden;
             background: #000;
-            position: fixed;
-            touch-action: manipulation;
+            font-family: Arial, sans-serif;
         }
         
+        /* Container principal */
+        .container {
+            width: 100%;
+            height: 100%;
+            position: relative;
+        }
+        
+        /* Iframe */
         iframe {
             position: absolute;
             top: 0;
@@ -45,10 +48,9 @@
             width: 100%;
             height: 100%;
             border: none;
-            z-index: 1;
         }
         
-        /* Loading screen */
+        /* Tela de loading */
         .loader {
             position: fixed;
             top: 0;
@@ -56,13 +58,12 @@
             width: 100%;
             height: 100%;
             background: #000;
-            color: #fff;
+            color: white;
             display: flex;
             flex-direction: column;
             align-items: center;
             justify-content: center;
-            z-index: 9999;
-            font-family: -apple-system, BlinkMacSystemFont, sans-serif;
+            z-index: 1000;
             transition: opacity 0.3s;
         }
         
@@ -71,7 +72,7 @@
             height: 50px;
             border: 4px solid rgba(255,255,255,0.3);
             border-radius: 50%;
-            border-top-color: #fff;
+            border-top-color: #4CAF50;
             animation: spin 1s ease-in-out infinite;
             margin-bottom: 20px;
         }
@@ -80,7 +81,38 @@
             to { transform: rotate(360deg); }
         }
         
-        /* Install prompt (Android) */
+        /* Botões de controle */
+        .controls {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            z-index: 999;
+            display: flex;
+            gap: 10px;
+            opacity: 0.3;
+            transition: opacity 0.3s;
+        }
+        
+        .controls:hover {
+            opacity: 1;
+        }
+        
+        .control-btn {
+            background: rgba(0,0,0,0.7);
+            color: white;
+            border: 1px solid #555;
+            border-radius: 50%;
+            width: 50px;
+            height: 50px;
+            font-size: 20px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            backdrop-filter: blur(5px);
+        }
+        
+        /* Prompt de instalação */
         .install-prompt {
             position: fixed;
             bottom: 20px;
@@ -88,20 +120,20 @@
             transform: translateX(-50%);
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             color: white;
-            padding: 15px 25px;
+            padding: 12px 24px;
             border-radius: 50px;
             display: flex;
             align-items: center;
-            gap: 10px;
-            z-index: 10001;
-            box-shadow: 0 5px 15px rgba(0,0,0,0.3);
-            animation: slideUp 0.3s ease;
+            gap: 15px;
+            z-index: 1001;
+            box-shadow: 0 5px 20px rgba(0,0,0,0.3);
+            animation: slideUp 0.5s ease;
             display: none;
         }
         
         @keyframes slideUp {
-            from { bottom: -100px; }
-            to { bottom: 20px; }
+            from { bottom: -100px; opacity: 0; }
+            to { bottom: 20px; opacity: 1; }
         }
         
         .install-btn {
@@ -112,6 +144,7 @@
             border-radius: 25px;
             font-weight: bold;
             cursor: pointer;
+            font-size: 14px;
         }
         
         .close-install {
@@ -120,138 +153,110 @@
             color: white;
             font-size: 20px;
             cursor: pointer;
-            margin-left: 10px;
+            line-height: 1;
+            padding: 0;
+            width: 24px;
+            height: 24px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
         }
     </style>
 </head>
 <body>
-    <!-- Prompt de instalação Android -->
+    <!-- Tela de loading -->
+    <div class="loader" id="loader">
+        <div class="spinner"></div>
+        <div>Carregando demo Ui24R...</div>
+        <div style="font-size: 14px; margin-top: 10px; color: #aaa;">
+            Versão de demonstração online
+        </div>
+    </div>
+    
+    <!-- Prompt de instalação -->
     <div class="install-prompt" id="installPrompt">
-        <span>📱 Instalar como App</span>
+        <span style="font-size: 14px;">📱 Instalar como App</span>
         <button class="install-btn" id="installButton">Instalar</button>
         <button class="close-install" id="closeInstall">×</button>
     </div>
     
-    <!-- Loading -->
-    <div class="loader" id="loader">
-        <div class="spinner"></div>
-        <div>Conectando à mesa de som...</div>
-        <div style="font-size: 14px; margin-top: 10px; color: #aaa;">
-            IP: <span id="ipDisplay">https://www.soundcraft.com/ui24-software-demo/mixer.html</span>
-        </div>
+    <!-- Container do iframe -->
+    <div class="container">
+        <!-- DEMO OFICIAL UI24R -->
+        <iframe 
+            src="https://www.soundcraft.com/ui24-software-demo/mixer.html" 
+            id="mesaFrame"
+            allow="autoplay; microphone; clipboard-write; fullscreen"
+            sandbox="allow-same-origin allow-scripts allow-forms allow-popups allow-modals"
+            title="Soundcraft Ui24R Demo Mixer"
+        ></iframe>
     </div>
     
-    <!-- Iframe -->
-    <!-- ⚠️ ALTERE O IP ABAIXO ⚠️ -->
-    <iframe 
-        src="https://www.soundcraft.com/ui24-software-demo/mixer.html" 
-        id="mesaFrame"
-        allow="autoplay; microphone; clipboard-write; fullscreen"
-        sandbox="allow-same-origin allow-scripts allow-forms allow-popups allow-modals"
-    ></iframe>
+    <!-- Botões de controle -->
+    <div class="controls">
+        <button class="control-btn" id="reloadBtn" title="Recarregar">↻</button>
+        <button class="control-btn" id="fullscreenBtn" title="Tela Cheia">⛶</button>
+        <button class="control-btn" id="infoBtn" title="Informações">ⓘ</button>
+    </div>
     
     <script>
-        // ========== CONFIGURAÇÃO ==========
-        // ⚠️ ALTERE ESTE IP PARA O DA SUA MESA ⚠️
-        const MESA_IP = "soundcraft.com/ui24-software-demo/mixer.html";
-        // ==================================
-        
-        // Elementos
+        // ========== ELEMENTOS DOM ==========
         const loader = document.getElementById('loader');
         const mesaFrame = document.getElementById('mesaFrame');
-        const ipDisplay = document.getElementById('ipDisplay');
         const installPrompt = document.getElementById('installPrompt');
         const installButton = document.getElementById('installButton');
         const closeInstall = document.getElementById('closeInstall');
+        const reloadBtn = document.getElementById('reloadBtn');
+        const fullscreenBtn = document.getElementById('fullscreenBtn');
+        const infoBtn = document.getElementById('infoBtn');
         
-        // Variáveis
+        // ========== VARIÁVEIS DE ESTADO ==========
         let deferredPrompt = null;
         let isInstalled = false;
         
-        // ========== CONFIGURAR PWA ==========
-        ipDisplay.textContent = MESA_IP;
-        mesaFrame.src = `http://${MESA_IP}`;
-        
-        // Detectar dispositivo
-        const isAndroid = /Android/i.test(navigator.userAgent);
-        const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
-        
-        // ========== INSTALAÇÃO PWA (ANDROID) ==========
-        // Evento disparado quando o PWA pode ser instalado
-        window.addEventListener('beforeinstallprompt', (e) => {
-            console.log('beforeinstallprompt disparado');
-            e.preventDefault();
-            deferredPrompt = e;
+        // ========== INICIALIZAÇÃO ==========
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log('Demo Ui24R PWA carregado');
             
-            // Mostrar prompt após 3 segundos
-            setTimeout(() => {
-                if (!isInstalled) {
-                    installPrompt.style.display = 'flex';
-                }
-            }, 3000);
-        });
-        
-        // Usuário instalou o PWA
-        window.addEventListener('appinstalled', () => {
-            console.log('PWA instalado');
-            isInstalled = true;
-            installPrompt.style.display = 'none';
-            deferredPrompt = null;
-        });
-        
-        // Botão de instalação
-        installButton.addEventListener('click', async () => {
-            if (deferredPrompt) {
-                deferredPrompt.prompt();
-                const { outcome } = await deferredPrompt.userChoice;
-                console.log(`Usuário ${outcome} a instalação`);
-                installPrompt.style.display = 'none';
+            // Verificar se já está rodando como PWA
+            if (window.matchMedia('(display-mode: standalone)').matches) {
+                console.log('Executando como PWA instalado');
+                isInstalled = true;
+                document.title = 'Ui24R Demo (App)';
             }
         });
         
-        // Fechar prompt
-        closeInstall.addEventListener('click', () => {
-            installPrompt.style.display = 'none';
-        });
-        
-        // ========== CARREGAMENTO IFRAME ==========
-        mesaFrame.onload = function() {
-            console.log('Iframe carregado');
+        // ========== CARREGAMENTO DO IFRAME ==========
+        mesaFrame.addEventListener('load', function() {
+            console.log('Demo Ui24R carregada com sucesso');
             
             // Esconder loader
             setTimeout(() => {
                 loader.style.opacity = '0';
                 setTimeout(() => {
                     loader.style.display = 'none';
-                }, 300);
-            }, 500);
-            
-            // Tentar fullscreen (Android/Desktop)
-            if (!isIOS) {
-                setTimeout(() => {
-                    if (document.documentElement.requestFullscreen) {
-                        document.documentElement.requestFullscreen()
-                            .catch(e => console.log('Fullscreen error:', e));
+                    
+                    // Mostrar prompt de instalação após 3 segundos
+                    if (!isInstalled && deferredPrompt) {
+                        setTimeout(showInstallPrompt, 3000);
                     }
-                }, 1000);
-            }
-        };
+                }, 300);
+            }, 1000);
+        });
         
-        mesaFrame.onerror = function() {
+        mesaFrame.addEventListener('error', function() {
+            console.error('Erro ao carregar a demo');
             loader.innerHTML = `
                 <div style="font-size: 48px; margin-bottom: 20px;">⚠️</div>
                 <div style="text-align: center; margin-bottom: 15px;">
-                    Não foi possível conectar à mesa
+                    Não foi possível carregar a demo
                 </div>
                 <div style="color: #888; margin-bottom: 20px; font-size: 14px;">
-                    Verifique:<br>
-                    1. IP correto (${MESA_IP})<br>
-                    2. Mesma rede Wi-Fi<br>
-                    3. Mesa ligada
+                    A demo pode estar temporariamente indisponível
                 </div>
                 <button onclick="window.location.reload()" style="
-                    background: #fff;
-                    color: #000;
+                    background: #4CAF50;
+                    color: white;
                     border: none;
                     padding: 12px 24px;
                     border-radius: 25px;
@@ -262,22 +267,135 @@
                     Tentar Novamente
                 </button>
             `;
-        };
+        });
         
-        // ========== SERVIÇO WORKER (OPCIONAL mas ajuda na instalação) ==========
-        if ('serviceWorker' in navigator) {
-            window.addEventListener('load', () => {
-                navigator.serviceWorker.register('/sw.js')
-                    .then(reg => console.log('Service Worker registrado'))
-                    .catch(err => console.log('SW erro:', err));
-            });
-        }
+        // ========== PWA INSTALL PROMPT ==========
+        window.addEventListener('beforeinstallprompt', (e) => {
+            console.log('beforeinstallprompt disparado');
+            e.preventDefault();
+            deferredPrompt = e;
+            
+            // Atualizar UI para mostrar que pode instalar
+            if (!isInstalled) {
+                // Mostrar após 5 segundos
+                setTimeout(() => {
+                    if (deferredPrompt) {
+                        showInstallPrompt();
+                    }
+                }, 5000);
+            }
+        });
         
-        // ========== DETECTAR SE JÁ ESTÁ INSTALADO ==========
-        if (window.matchMedia('(display-mode: standalone)').matches) {
-            console.log('Executando como PWA instalado');
+        window.addEventListener('appinstalled', () => {
+            console.log('PWA instalado com sucesso');
             isInstalled = true;
+            installPrompt.style.display = 'none';
+            deferredPrompt = null;
+            
+            // Feedback visual
+            const originalTitle = document.title;
+            document.title = '✓ Ui24R Demo';
+            setTimeout(() => {
+                document.title = originalTitle;
+            }, 2000);
+        });
+        
+        function showInstallPrompt() {
+            if (!isInstalled && deferredPrompt) {
+                installPrompt.style.display = 'flex';
+                
+                // Auto-esconder após 15 segundos
+                setTimeout(() => {
+                    if (installPrompt.style.display === 'flex') {
+                        installPrompt.style.display = 'none';
+                    }
+                }, 15000);
+            }
         }
+        
+        // ========== BOTÕES DE CONTROLE ==========
+        installButton.addEventListener('click', async () => {
+            if (deferredPrompt) {
+                deferredPrompt.prompt();
+                const { outcome } = await deferredPrompt.userChoice;
+                console.log(`Usuário ${outcome} a instalação`);
+                
+                if (outcome === 'accepted') {
+                    installPrompt.style.display = 'none';
+                }
+            }
+        });
+        
+        closeInstall.addEventListener('click', () => {
+            installPrompt.style.display = 'none';
+        });
+        
+        reloadBtn.addEventListener('click', () => {
+            mesaFrame.contentWindow.location.reload();
+        });
+        
+        fullscreenBtn.addEventListener('click', () => {
+            requestFullscreen();
+        });
+        
+        infoBtn.addEventListener('click', () => {
+            alert('Demo Ui24R Soundcraft\n\nEsta é uma versão de demonstração online da interface Ui24R.\n\nPara usar com sua mesa real, altere o IP no código.');
+        });
+        
+        // ========== FUNÇÕES AUXILIARES ==========
+        function requestFullscreen() {
+            const elem = document.documentElement;
+            
+            if (elem.requestFullscreen) {
+                elem.requestFullscreen();
+            } else if (elem.webkitRequestFullscreen) { // Safari
+                elem.webkitRequestFullscreen();
+            } else if (elem.msRequestFullscreen) { // IE/Edge
+                elem.msRequestFullscreen();
+            }
+        }
+        
+        // Sair do fullscreen com ESC
+        document.addEventListener('fullscreenchange', () => {
+            if (!document.fullscreenElement) {
+                console.log("Saiu do modo tela cheia");
+            }
+        });
+        
+        // Detectar dispositivo
+        function isMobile() {
+            return /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+        }
+        
+        // Se for mobile, tentar fullscreen automático
+        if (isMobile()) {
+            setTimeout(() => {
+                if (!isInstalled) {
+                    requestFullscreen();
+                }
+            }, 2000);
+        }
+        
+        // Prevenir zoom
+        document.addEventListener('gesturestart', (e) => {
+            e.preventDefault();
+        });
+        
+        // Toque duplo para mostrar/ocultar controles
+        let lastTap = 0;
+        document.addEventListener('touchend', (e) => {
+            const currentTime = new Date().getTime();
+            const tapLength = currentTime - lastTap;
+            
+            if (tapLength < 500 && tapLength > 0) {
+                // Duplo toque - alternar controles
+                const controls = document.querySelector('.controls');
+                controls.style.opacity = controls.style.opacity === '1' ? '0.3' : '1';
+                e.preventDefault();
+            }
+            
+            lastTap = currentTime;
+        });
     </script>
 </body>
 </html>
