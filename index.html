@@ -4,36 +4,52 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     
-    <!-- Meta tags para iOS -->
+    <!-- CORRIGIDO: Meta tags unificadas -->
+    <meta name="mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="Mesa Imersiva">
     
-    <link rel="manifest" href="manifest.json">
+    <!-- PWA Requirements -->
+    <link rel="manifest" href="/manifest.json">
+    <link rel="icon" href="/icon-192.png">
+    
+    <!-- CORRIGIDO: Theme color para PWA -->
+    <meta name="theme-color" content="#000000">
+    <meta name="msapplication-TileColor" content="#000000">
+    <meta name="msapplication-navbutton-color" content="#000000">
+    
     <title>Mesa de Som Imersiva</title>
     
     <style>
-        body, html { 
-            margin: 0; 
-            padding: 0; 
-            height: 100%; 
-            overflow: hidden; 
-            background: #000; 
-            -webkit-touch-callout: none;
-            -webkit-user-select: none;
-            user-select: none;
+        * {
+            margin: 0;
+            padding: 0;
+            -webkit-tap-highlight-color: transparent;
+            -webkit-text-size-adjust: 100%;
         }
         
-        iframe { 
-            border: none; 
-            width: 100%; 
-            height: 100%; 
+        body, html {
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+            background: #000;
+            position: fixed;
+            touch-action: manipulation;
+        }
+        
+        iframe {
             position: absolute;
             top: 0;
             left: 0;
+            width: 100%;
+            height: 100%;
+            border: none;
+            z-index: 1;
         }
         
-        /* Tela de loading */
-        .loading {
+        /* Loading screen */
+        .loader {
             position: fixed;
             top: 0;
             left: 0;
@@ -42,80 +58,226 @@
             background: #000;
             color: #fff;
             display: flex;
+            flex-direction: column;
             align-items: center;
             justify-content: center;
-            z-index: 1000;
+            z-index: 9999;
+            font-family: -apple-system, BlinkMacSystemFont, sans-serif;
+            transition: opacity 0.3s;
         }
         
-        /* Botão para sair do modo imersivo (opcional) */
-        .exit-fullscreen {
+        .spinner {
+            width: 50px;
+            height: 50px;
+            border: 4px solid rgba(255,255,255,0.3);
+            border-radius: 50%;
+            border-top-color: #fff;
+            animation: spin 1s ease-in-out infinite;
+            margin-bottom: 20px;
+        }
+        
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+        
+        /* Install prompt (Android) */
+        .install-prompt {
             position: fixed;
-            top: 10px;
-            right: 10px;
-            z-index: 1001;
-            background: rgba(0,0,0,0.5);
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             color: white;
-            border: none;
-            padding: 5px 10px;
-            border-radius: 5px;
+            padding: 15px 25px;
+            border-radius: 50px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            z-index: 10001;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+            animation: slideUp 0.3s ease;
             display: none;
+        }
+        
+        @keyframes slideUp {
+            from { bottom: -100px; }
+            to { bottom: 20px; }
+        }
+        
+        .install-btn {
+            background: white;
+            color: #667eea;
+            border: none;
+            padding: 8px 20px;
+            border-radius: 25px;
+            font-weight: bold;
+            cursor: pointer;
+        }
+        
+        .close-install {
+            background: transparent;
+            border: none;
+            color: white;
+            font-size: 20px;
+            cursor: pointer;
+            margin-left: 10px;
         }
     </style>
 </head>
 <body>
-    <div class="loading" id="loading">
-        Carregando interface da mesa...
+    <!-- Prompt de instalação Android -->
+    <div class="install-prompt" id="installPrompt">
+        <span>📱 Instalar como App</span>
+        <button class="install-btn" id="installButton">Instalar</button>
+        <button class="close-install" id="closeInstall">×</button>
     </div>
     
-    <button class="exit-fullscreen" id="exitBtn" onclick="exitFullscreen()">
-        Sair
-    </button>
+    <!-- Loading -->
+    <div class="loader" id="loader">
+        <div class="spinner"></div>
+        <div>Conectando à mesa de som...</div>
+        <div style="font-size: 14px; margin-top: 10px; color: #aaa;">
+            IP: <span id="ipDisplay">https://www.soundcraft.com/ui24-software-demo/mixer.html</span>
+        </div>
+    </div>
     
-    <!-- Substitua pelo IP da sua mesa -->
+    <!-- Iframe -->
+    <!-- ⚠️ ALTERE O IP ABAIXO ⚠️ -->
     <iframe 
         src="https://www.soundcraft.com/ui24-software-demo/mixer.html" 
         id="mesaFrame"
-        allow="autoplay; microphone"
-        onload="hideLoading()">
-    </iframe>
+        allow="autoplay; microphone; clipboard-write; fullscreen"
+        sandbox="allow-same-origin allow-scripts allow-forms allow-popups allow-modals"
+    ></iframe>
     
     <script>
-        // Esconder loading quando o iframe carregar
-        function hideLoading() {
-            document.getElementById('loading').style.display = 'none';
-        }
+        // ========== CONFIGURAÇÃO ==========
+        // ⚠️ ALTERE ESTE IP PARA O DA SUA MESA ⚠️
+        const MESA_IP = "soundcraft.com/ui24-software-demo/mixer.html";
+        // ==================================
         
-        // Entrar em tela cheia (para desktop)
-        function requestFullscreen() {
-            const elem = document.documentElement;
-            if (elem.requestFullscreen) {
-                elem.requestFullscreen();
-            }
-        }
+        // Elementos
+        const loader = document.getElementById('loader');
+        const mesaFrame = document.getElementById('mesaFrame');
+        const ipDisplay = document.getElementById('ipDisplay');
+        const installPrompt = document.getElementById('installPrompt');
+        const installButton = document.getElementById('installButton');
+        const closeInstall = document.getElementById('closeInstall');
         
-        // Tentar entrar em fullscreen ao tocar na tela (para alguns dispositivos)
-        document.addEventListener('click', requestFullscreen);
+        // Variáveis
+        let deferredPrompt = null;
+        let isInstalled = false;
         
-        // Detectar se está em iOS
+        // ========== CONFIGURAR PWA ==========
+        ipDisplay.textContent = MESA_IP;
+        mesaFrame.src = `http://${MESA_IP}`;
+        
+        // Detectar dispositivo
+        const isAndroid = /Android/i.test(navigator.userAgent);
         const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
         
-        if (isIOS) {
-            // iOS não suporta fullscreen verdadeiro
-            document.getElementById('exitBtn').style.display = 'block';
-        }
+        // ========== INSTALAÇÃO PWA (ANDROID) ==========
+        // Evento disparado quando o PWA pode ser instalado
+        window.addEventListener('beforeinstallprompt', (e) => {
+            console.log('beforeinstallprompt disparado');
+            e.preventDefault();
+            deferredPrompt = e;
+            
+            // Mostrar prompt após 3 segundos
+            setTimeout(() => {
+                if (!isInstalled) {
+                    installPrompt.style.display = 'flex';
+                }
+            }, 3000);
+        });
         
-        // Recarregar o iframe se houver problema de conexão
-        let connectionAttempts = 0;
-        const maxAttempts = 3;
+        // Usuário instalou o PWA
+        window.addEventListener('appinstalled', () => {
+            console.log('PWA instalado');
+            isInstalled = true;
+            installPrompt.style.display = 'none';
+            deferredPrompt = null;
+        });
         
-        document.getElementById('mesaFrame').onerror = function() {
-            if (connectionAttempts < maxAttempts) {
-                connectionAttempts++;
+        // Botão de instalação
+        installButton.addEventListener('click', async () => {
+            if (deferredPrompt) {
+                deferredPrompt.prompt();
+                const { outcome } = await deferredPrompt.userChoice;
+                console.log(`Usuário ${outcome} a instalação`);
+                installPrompt.style.display = 'none';
+            }
+        });
+        
+        // Fechar prompt
+        closeInstall.addEventListener('click', () => {
+            installPrompt.style.display = 'none';
+        });
+        
+        // ========== CARREGAMENTO IFRAME ==========
+        mesaFrame.onload = function() {
+            console.log('Iframe carregado');
+            
+            // Esconder loader
+            setTimeout(() => {
+                loader.style.opacity = '0';
                 setTimeout(() => {
-                    this.src = this.src; // Recarregar
-                }, 2000);
+                    loader.style.display = 'none';
+                }, 300);
+            }, 500);
+            
+            // Tentar fullscreen (Android/Desktop)
+            if (!isIOS) {
+                setTimeout(() => {
+                    if (document.documentElement.requestFullscreen) {
+                        document.documentElement.requestFullscreen()
+                            .catch(e => console.log('Fullscreen error:', e));
+                    }
+                }, 1000);
             }
         };
+        
+        mesaFrame.onerror = function() {
+            loader.innerHTML = `
+                <div style="font-size: 48px; margin-bottom: 20px;">⚠️</div>
+                <div style="text-align: center; margin-bottom: 15px;">
+                    Não foi possível conectar à mesa
+                </div>
+                <div style="color: #888; margin-bottom: 20px; font-size: 14px;">
+                    Verifique:<br>
+                    1. IP correto (${MESA_IP})<br>
+                    2. Mesma rede Wi-Fi<br>
+                    3. Mesa ligada
+                </div>
+                <button onclick="window.location.reload()" style="
+                    background: #fff;
+                    color: #000;
+                    border: none;
+                    padding: 12px 24px;
+                    border-radius: 25px;
+                    cursor: pointer;
+                    font-weight: bold;
+                    font-size: 16px;
+                ">
+                    Tentar Novamente
+                </button>
+            `;
+        };
+        
+        // ========== SERVIÇO WORKER (OPCIONAL mas ajuda na instalação) ==========
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('/sw.js')
+                    .then(reg => console.log('Service Worker registrado'))
+                    .catch(err => console.log('SW erro:', err));
+            });
+        }
+        
+        // ========== DETECTAR SE JÁ ESTÁ INSTALADO ==========
+        if (window.matchMedia('(display-mode: standalone)').matches) {
+            console.log('Executando como PWA instalado');
+            isInstalled = true;
+        }
     </script>
 </body>
 </html>
