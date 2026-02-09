@@ -1,6 +1,6 @@
 {
-  "name": "Demo Ui24R",
-  "short_name": "Ui24R Demo",
+  "name": "Ui24R Ui24R Maranata",
+  "short_name": "Ui24R Maranata",
   "description": "Demonstração da mesa de som Ui24R",
   "start_url": "/",
   "display": "fullscreen",
@@ -16,3 +16,4 @@
     }
   ]
 }
+
