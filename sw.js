@@ -1,47 +1,49 @@
-// Nome do cache
-const CACHE_NAME = 'mesa-ui24r-v1';
+// Service Worker para PWA Ui24R
+// Versão minimalista - não cacheia nada da mesa
 
-// Arquivos para cache (seu PWA)
-const urlsToCache = [
-  '/',
-  '/index.html',
-  '/manifest.json'
+const CACHE_NAME = 'ui24r-pwa-v1';
+const ASSETS = [
+  './ui24r-github.html',
+  './manifest-github.json'
 ];
 
-// INSTALA - Salva no cache
-self.addEventListener('install', event => {
+// Instalação
+self.addEventListener('install', (event) => {
   event.waitUntil(
-    caches.open(CACHE_NAME)
-      .then(cache => {
-        console.log('📦 Cache aberto');
-        return cache.addAll(urlsToCache);
-      })
+    caches.open(CACHE_NAME).then((cache) => {
+      return cache.addAll(ASSETS);
+    })
   );
+  self.skipWaiting();
 });
 
-// INTERCEPTA REQUISIÇÕES
-self.addEventListener('fetch', event => {
+// Ativação
+self.addEventListener('activate', (event) => {
+  event.waitUntil(
+    caches.keys().then((cacheNames) => {
+      return Promise.all(
+        cacheNames
+          .filter((name) => name !== CACHE_NAME)
+          .map((name) => caches.delete(name))
+      );
+    })
+  );
+  self.clients.claim();
+});
+
+// Fetch - IMPORTANTE: NÃO cachear requisições para a mesa
+self.addEventListener('fetch', (event) => {
+  const url = new URL(event.request.url);
+  
+  // Se for requisição para IP local (mesa), deixar passar direto
+  if (url.hostname.match(/^192\.168\./)) {
+    return; // Não interceptar
+  }
+  
+  // Cachear apenas assets locais
   event.respondWith(
-    caches.match(event.request)
-      .then(response => {
-        // Se tem no cache, usa
-        if (response) {
-          return response;
-        }
-        
-        // Se não tem, busca na rede
-        return fetch(event.request)
-          .then(response => {
-            // Não cacheamos a mesa (só nosso PWA)
-            if (!event.request.url.includes('192.168.1.249')) {
-              return caches.open(CACHE_NAME)
-                .then(cache => {
-                  cache.put(event.request, response.clone());
-                  return response;
-                });
-            }
-            return response;
-          });
-      })
+    caches.match(event.request).then((response) => {
+      return response || fetch(event.request);
+    })
   );
 });
